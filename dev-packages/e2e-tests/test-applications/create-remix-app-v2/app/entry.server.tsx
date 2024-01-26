@@ -25,7 +25,11 @@ Sentry.init({
   tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
 });
 
-export const handleError = Sentry.wrapRemixHandleError;
+const handleErrorImpl = () => {
+  Sentry.setTag('remix-test-tag', 'remix-test-value');
+};
+
+export const handleError = Sentry.wrapHandleErrorWithSentry(handleErrorImpl);
 
 export default function handleRequest(
   request: Request,

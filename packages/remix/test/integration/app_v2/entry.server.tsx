@@ -11,7 +11,11 @@ Sentry.init({
   autoSessionTracking: false,
 });
 
-export const handleError = Sentry.wrapRemixHandleError;
+const handleErrorImpl = () => {
+  Sentry.setTag('remix-test-tag', 'remix-test-value');
+};
+
+export const handleError = Sentry.wrapHandleErrorWithSentry(handleErrorImpl);
 
 export default function handleRequest(
   request: Request,
