@@ -1,10 +1,19 @@
-import type { Hub, Scope, Span, SpanTimeInput, StartSpanOptions, TransactionContext } from '@sentry/types';
+import type {
+  ClientOptions,
+  Hub,
+  Scope,
+  Span,
+  SpanTimeInput,
+  StartSpanOptions,
+  TransactionContext,
+} from '@sentry/types';
 
 import { dropUndefinedKeys, logger, tracingContextFromHeaders } from '@sentry/utils';
-import { getCurrentScope, getIsolationScope, withScope } from '../currentScopes';
+import { getClient, getCurrentScope, getIsolationScope, withScope } from '../currentScopes';
 
 import { DEBUG_BUILD } from '../debug-build';
 import { getCurrentHub } from '../hub';
+import { getRootSpan } from '../utils/getRootSpan';
 import { handleCallbackErrors } from '../utils/handleCallbackErrors';
 import { hasTracingEnabled } from '../utils/hasTracingEnabled';
 import { addChildSpanToSpan, spanIsSampled, spanTimeInputToSeconds, spanToJSON } from '../utils/spanUtils';
@@ -31,8 +40,7 @@ export function startSpan<T>(context: StartSpanOptions, callback: (span: Span) =
   return withScope(context.scope, scope => {
     // eslint-disable-next-line deprecation/deprecation
     const hub = getCurrentHub();
-    // eslint-disable-next-line deprecation/deprecation
-    const parentSpan = scope.getSpan() as SentrySpan | undefined;
+    const parentSpan = getParentSpan(scope);
 
     const shouldSkipSpan = context.onlyIfParent && !parentSpan;
     const activeSpan = shouldSkipSpan
@@ -80,8 +88,7 @@ export function startSpanManual<T>(context: StartSpanOptions, callback: (span: S
   return withScope(context.scope, scope => {
     // eslint-disable-next-line deprecation/deprecation
     const hub = getCurrentHub();
-    // eslint-disable-next-line deprecation/deprecation
-    const parentSpan = scope.getSpan() as SentrySpan | undefined;
+    const parentSpan = getParentSpan(scope);
 
     const shouldSkipSpan = context.onlyIfParent && !parentSpan;
     const activeSpan = shouldSkipSpan
@@ -129,18 +136,14 @@ export function startInactiveSpan(context: StartSpanOptions): Span {
   const spanContext = normalizeContext(context);
   // eslint-disable-next-line deprecation/deprecation
   const hub = getCurrentHub();
-  const parentSpan = context.scope
-    ? // eslint-disable-next-line deprecation/deprecation
-      (context.scope.getSpan() as SentrySpan | undefined)
-    : (getActiveSpan() as SentrySpan | undefined);
+  const scope = context.scope || getCurrentScope();
+  const parentSpan = getParentSpan(scope);
 
   const shouldSkipSpan = context.onlyIfParent && !parentSpan;
 
   if (shouldSkipSpan) {
     return new SentryNonRecordingSpan();
   }
-
-  const scope = context.scope || getCurrentScope();
 
   return createChildSpanOrTransaction(hub, {
     parentSpan,
@@ -336,4 +339,21 @@ function normalizeContext(context: StartSpanOptions): TransactionContext {
   }
 
   return context;
+}
+
+function getParentSpan(scope: Scope): SentrySpan | undefined {
+  // eslint-disable-next-line deprecation/deprecation
+  const span = scope.getSpan();
+
+  if (!span) {
+    return undefined;
+  }
+
+  const client = getClient();
+  const options: Partial<ClientOptions> = client ? client.getOptions() : {};
+  if (options.parentSpanIsAlwaysRootSpan) {
+    return getRootSpan(span) as SentrySpan;
+  }
+
+  return span as SentrySpan;
 }
