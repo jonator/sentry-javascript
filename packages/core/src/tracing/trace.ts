@@ -21,7 +21,7 @@ import { getDynamicSamplingContextFromSpan } from './dynamicSamplingContext';
 import { SentryNonRecordingSpan } from './sentryNonRecordingSpan';
 import type { SentrySpan } from './sentrySpan';
 import { SPAN_STATUS_ERROR } from './spanstatus';
-import { getActiveSpan, setCapturedScopesOnSpan } from './utils';
+import { setCapturedScopesOnSpan } from './utils';
 
 /**
  * Wraps a function with a transaction/span and finishes the span after the function is done.
