@@ -1,11 +1,6 @@
 import { addEventProcessor, addTracingExtensions, applySdkMetadata, getClient, setTag } from '@sentry/core';
-import type { NodeOptions } from '@sentry/node-experimental';
-import {
-  Integrations as OriginalIntegrations,
-  getDefaultIntegrations,
-  init as nodeInit,
-} from '@sentry/node-experimental';
-import type { EventProcessor } from '@sentry/types';
+import { getDefaultIntegrations, init as nodeInit } from '@sentry/node';
+import type { NodeOptions } from '@sentry/node';
 import { logger } from '@sentry/utils';
 
 import { DEBUG_BUILD } from '../common/debug-build';
@@ -13,17 +8,12 @@ import { devErrorSymbolicationEventProcessor } from '../common/devErrorSymbolica
 import { getVercelEnv } from '../common/getVercelEnv';
 import { isBuild } from '../common/utils/isBuild';
 import { distDirRewriteFramesIntegration } from './distDirRewriteFramesIntegration';
-import { Http } from './httpIntegration';
-import { OnUncaughtException } from './onUncaughtExceptionIntegration';
 
-export * from '@sentry/node-experimental';
+export * from '@sentry/node';
+import { onUncaughtExceptionIntegration } from './onUncaughtExceptionIntegration';
+
 export { captureUnderscoreErrorException } from '../common/_error';
-
-export const Integrations = {
-  ...OriginalIntegrations,
-  Http,
-  OnUncaughtException,
-};
+export { onUncaughtExceptionIntegration } from './onUncaughtExceptionIntegration';
 
 const globalWithInjectedValues = global as typeof global & {
   __rewriteFramesDistDir__?: string;
@@ -82,11 +72,8 @@ export function init(options: NodeOptions): void {
   }
 
   const customDefaultIntegrations = [
-    ...getDefaultIntegrations(options).filter(
-      integration => !['Http', 'OnUncaughtException'].includes(integration.name),
-    ),
-    new Http(),
-    new OnUncaughtException(),
+    ...getDefaultIntegrations(options).filter(integration => integration.name === 'OnUncaughtException'),
+    onUncaughtExceptionIntegration(),
   ];
 
   // This value is injected at build time, based on the output directory specified in the build config. Though a default
@@ -119,18 +106,10 @@ export function init(options: NodeOptions): void {
 
   nodeInit(opts);
 
-  const filterTransactions: EventProcessor = event => {
-    return event.type === 'transaction' && event.transaction === '/404' ? null : event;
-  };
-
-  filterTransactions.id = 'NextServer404TransactionFilter';
-
   setTag('runtime', 'node');
   if (IS_VERCEL) {
     setTag('vercel', true);
   }
-
-  addEventProcessor(filterTransactions);
 
   if (process.env.NODE_ENV === 'development') {
     addEventProcessor(devErrorSymbolicationEventProcessor);
