@@ -14,7 +14,7 @@ import {
   startSpan,
   withIsolationScope,
 } from '@sentry/core';
-import { captureException, getActiveSpan, getRootSpan } from '@sentry/node-experimental';
+import { captureException, getActiveSpan, getRootSpan } from '@sentry/node';
 import type { Span, TransactionSource, WrappedFunction } from '@sentry/types';
 import {
   addExceptionMechanism,
