@@ -6,12 +6,7 @@ export type { OpenTelemetryClient } from './types';
 export { wrapClientClass } from './custom/client';
 
 export { getSpanKind } from './utils/getSpanKind';
-export {
-  getSpanMetadata,
-  getSpanParent,
-  setSpanMetadata,
-  getSpanScopes,
-} from './utils/spanData';
+export { getSpanScopes } from './utils/spanData';
 
 export { getScopesFromContext } from './utils/contextData';
 
@@ -26,7 +21,7 @@ export {
 
 export { isSentryRequestSpan } from './utils/isSentryRequest';
 
-export { getActiveSpan, getRootSpan } from './utils/getActiveSpan';
+export { getActiveSpan } from './utils/getActiveSpan';
 export { startSpan, startSpanManual, startInactiveSpan, withActiveSpan } from './trace';
 
 // eslint-disable-next-line deprecation/deprecation
