@@ -17,7 +17,6 @@ import {
   makeSetSDKSourcePlugin,
   makeSucrasePlugin,
 } from './plugins/index.mjs';
-import { makePackageNodeEsm } from './plugins/make-esm-plugin.mjs';
 import { mergePlugins } from './utils.mjs';
 
 const packageDotJSON = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), './package.json'), { encoding: 'utf8' }));
@@ -119,11 +118,14 @@ export function makeBaseNPMConfig(options = {}) {
   });
 }
 
-export function makeNPMConfigVariants(baseConfig) {
-  const variantSpecificConfigs = [
-    { output: { format: 'cjs', dir: path.join(baseConfig.output.dir, 'cjs') } },
-    { output: { format: 'esm', dir: path.join(baseConfig.output.dir, 'esm'), plugins: [makePackageNodeEsm()] } },
-  ];
+export function makeNPMConfigVariants(baseConfig, options = {}) {
+  const { hasEsm = true } = options;
+
+  const variantSpecificConfigs = [{ output: { format: 'cjs', dir: path.join(baseConfig.output.dir, 'cjs') } }];
+
+  if (hasEsm) {
+    variantSpecificConfigs.push({ output: { format: 'esm', dir: path.join(baseConfig.output.dir, 'esm') } });
+  }
 
   return variantSpecificConfigs.map(variant => deepMerge(baseConfig, variant));
 }

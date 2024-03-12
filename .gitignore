@@ -16,7 +16,7 @@ scratch/
 *.tsbuildinfo
 # side effects of running AWS lambda layer zip action locally
 dist-serverless/
-sentry-node-serverless-*.zip
+sentry-aws-serverless-*.zip
 # transpiled transformers
 jest/transformers/*.js
 # node tarballs

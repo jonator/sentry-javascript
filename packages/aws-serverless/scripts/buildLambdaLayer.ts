@@ -19,31 +19,25 @@ async function buildLambdaLayer(): Promise<void> {
 
   // We build a minified bundle, but it's standing in for the regular `index.js` file listed in `package.json`'s `main`
   // property, so we have to rename it so it's findable.
-  fs.renameSync(
-    'build/aws/dist-serverless/nodejs/node_modules/@sentry/serverless/build/npm/cjs/index.min.js',
-    'build/aws/dist-serverless/nodejs/node_modules/@sentry/serverless/build/npm/cjs/index.js',
-  );
+  fs.renameSync('build/npm/cjs/index.min.js', 'build/npm/cjs/index.js');
 
   // We're creating a bundle for the SDK, but still using it in a Node context, so we need to copy in `package.json`,
   // purely for its `main` property.
   console.log('Copying `package.json` into lambda layer.');
-  fs.copyFileSync('package.json', 'build/aws/dist-serverless/nodejs/node_modules/@sentry/serverless/package.json');
+  fs.copyFileSync('package.json', 'build/package.json');
 
   // The layer also includes `awslambda-auto.js`, a helper file which calls `Sentry.init()` and wraps the lambda
   // handler. It gets run when Node is launched inside the lambda, using the environment variable
   //
-  //   `NODE_OPTIONS="-r @sentry/serverless/dist/awslambda-auto"`.
+  //   `NODE_OPTIONS="-r @sentry/aws-serverless/dist/awslambda-auto"`.
   //
   // (The`-r` is what runs the script on startup.) The `dist` directory is no longer where we emit our built code, so
   // for backwards compatibility, we create a symlink.
   console.log('Creating symlink for `awslambda-auto.js` in legacy `dist` directory.');
-  fsForceMkdirSync('build/aws/dist-serverless/nodejs/node_modules/@sentry/serverless/dist');
-  fs.symlinkSync(
-    '../build/npm/cjs/awslambda-auto.js',
-    'build/aws/dist-serverless/nodejs/node_modules/@sentry/serverless/dist/awslambda-auto.js',
-  );
+  fsForceMkdirSync('build/dist');
+  fs.symlinkSync('../build/npm/cjs/awslambda-auto.js', 'build/dist/awslambda-auto.js');
 
-  const zipFilename = `sentry-node-serverless-${version}.zip`;
+  const zipFilename = `sentry-aws-serverless-${version}.zip`;
   console.log(`Creating final layer zip file ${zipFilename}.`);
   // need to preserve the symlink above with -y
   run(`zip -r -y ${zipFilename} .`, { cwd: 'build/aws/dist-serverless' });

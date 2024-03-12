@@ -13,27 +13,26 @@ set -euo pipefail
 # Remove old distribution directories and zip files.
 echo "Preparing local directories for new build..."
 rm -rf dist-serverless/
-rm -rf ./packages/serverless/build
-rm -rf ./packages/serverless/dist
-rm -rf ./packages/serverless/node_modules
+rm -rf ./packages/aws-serverless/build
+rm -rf ./packages/aws-serverless/node_modules
 
 # Creating Lambda layer
-echo "Creating Lambda layer in ./packages/serverless/build/aws/dist-serverless..."
-cd packages/serverless
+echo "Creating Lambda layer in ./packages/aws-serverless/build/aws/dist-serverless..."
+cd packages/aws-serverless
 yarn build
-echo "Done creating Lambda layer in ./packages/serverless/build/aws/dist-serverless."
+echo "Done creating Lambda layer in ./packages/aws-serverless/build/aws/dist-serverless."
 
 # Deploying zipped Lambda layer to AWS
-ZIP=$(ls build/aws/dist-serverless | grep sentry-node-serverless | head -n 1)
+ZIP=$(ls build/aws/dist-serverless | grep sentry-aws-serverless | head -n 1)
 echo "Deploying zipped Lambda layer $ZIP to AWS..."
 
 aws lambda publish-layer-version \
-  --layer-name "SentryNodeServerlessSDK-local-dev" \
+  --layer-name "SentryAwsServerlessSDKv8-local-dev" \
   --region "eu-central-1" \
   --zip-file "fileb://build/aws/dist-serverless/$ZIP" \
-  --description "Local test build of SentryNodeServerlessSDK (can be deleted)" \
-  --compatible-runtimes nodejs10.x nodejs12.x nodejs14.x nodejs16.x nodejs18.x
+  --description "Local test build of SentryAwsServerlessSDKv8 (can be deleted)" \
+  --compatible-runtimes nodejs14.x nodejs16.x nodejs18.x nodejs20.x
 
-echo "Done deploying zipped Lambda layer to AWS as 'SentryNodeServerlessSDK-local-dev'."
+echo "Done deploying zipped Lambda layer to AWS as 'SentryAwsServerlessSDKv8-local-dev'."
 
 echo "All done. Have a nice day!"
