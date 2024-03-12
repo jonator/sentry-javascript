@@ -79,7 +79,7 @@ const DEPENDENTS: Dependent[] = [
   },
   {
     package: '@sentry/remix',
-    compareWith: nodeExperimentalExports,
+    compareWith: nodeExports,
     exports: Object.keys(SentryRemix),
   },
   {
