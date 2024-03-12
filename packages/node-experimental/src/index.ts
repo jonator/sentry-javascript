@@ -47,6 +47,8 @@ export {
   extractRequestData,
 } from '@sentry/utils';
 
+export { getDynamicSamplingContextFromSpan } from '@sentry/opentelemetry';
+
 export {
   addBreadcrumb,
   isInitialized,
