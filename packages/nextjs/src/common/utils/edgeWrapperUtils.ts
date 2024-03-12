@@ -47,6 +47,7 @@ export function withEdgeWrapping<H extends EdgeRouteHandler>(
               [SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: 'route',
               [SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN]: 'auto.function.nextjs.withEdgeWrapping',
             },
+            forceTransaction: true,
             metadata: {
               request: req instanceof Request ? winterCGRequestToRequestData(req) : undefined,
             },

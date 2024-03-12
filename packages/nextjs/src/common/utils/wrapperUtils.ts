@@ -103,6 +103,7 @@ export function withTracedServerSideDataFetcher<F extends (...args: any[]) => Pr
         if (!requestSpan) {
           // TODO(v8): Simplify these checks when startInactiveSpan always returns a span
           requestSpan = startInactiveSpan({
+            forceTransaction: true,
             name: options.requestedRouteName,
             op: 'http.server',
             attributes: {
@@ -122,6 +123,7 @@ export function withTracedServerSideDataFetcher<F extends (...args: any[]) => Pr
             {
               op: 'function.nextjs',
               name: `${options.dataFetchingMethodName} (${options.dataFetcherRouteName})`,
+              forceTransaction: true,
               attributes: {
                 [SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN]: 'auto.function.nextjs',
                 [SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: 'route',
@@ -176,6 +178,7 @@ export async function callDataFetcherTraced<F extends (...args: any[]) => Promis
     {
       op: 'function.nextjs',
       name: `${dataFetchingMethodName} (${parameterizedRoute})`,
+      forceTransaction: true,
       attributes: {
         [SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN]: 'auto.function.nextjs',
         [SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: 'route',

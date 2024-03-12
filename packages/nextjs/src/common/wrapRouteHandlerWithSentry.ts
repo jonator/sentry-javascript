@@ -46,6 +46,7 @@ export function wrapRouteHandlerWithSentry<F extends (...args: any[]) => any>(
                 {
                   op: 'http.server',
                   name: `${method} ${parameterizedRoute}`,
+                  forceTransaction: true,
                   attributes: {
                     [SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: 'route',
                     [SEMANTIC_ATTRIBUTE_SENTRY_ORIGIN]: 'auto.function.nextjs',
