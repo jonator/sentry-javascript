@@ -11,6 +11,7 @@ import { GLOBAL_OBJ, createStackParser, nodeStackLineParser, stackParserFromStac
 
 import { setAsyncLocalStorageAsyncContextStrategy } from './async';
 import { VercelEdgeClient } from './client';
+// import { vercelFetchIntegration } from './integrations/vercelFetchIntegration';
 import { winterCGFetchIntegration } from './integrations/wintercg-fetch';
 import { makeEdgeTransport } from './transports';
 import type { VercelEdgeClientOptions, VercelEdgeOptions } from './types';
@@ -29,6 +30,7 @@ export function getDefaultIntegrations(options: Options): Integration[] {
     functionToStringIntegration(),
     linkedErrorsIntegration(),
     winterCGFetchIntegration(),
+    // vercelFetchIntegration(), // This currently crashes the Next.js SDK during build because @vercel/otel uses `eval()`.
     ...(options.sendDefaultPii ? [requestDataIntegration()] : []),
   ];
 }
