@@ -16,7 +16,7 @@ import {
   startSpan,
   withIsolationScope,
 } from '@sentry/core';
-import { getDynamicSamplingContextFromSpan } from '@sentry/node';
+import { getDynamicSamplingContextFromSpan } from '@sentry/opentelemetry';
 import type { Span, TransactionSource, WrappedFunction } from '@sentry/types';
 import {
   addExceptionMechanism,
