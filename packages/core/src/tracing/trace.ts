@@ -1,12 +1,4 @@
-import type {
-  ClientOptions,
-  Hub,
-  Scope,
-  Span,
-  SpanTimeInput,
-  StartSpanOptions,
-  TransactionContext,
-} from '@sentry/types';
+import type { ClientOptions, Scope, Span, SpanTimeInput, StartSpanOptions, TransactionContext } from '@sentry/types';
 
 import { propagationContextFromHeaders } from '@sentry/utils';
 import type { AsyncContextStrategy } from '../asyncContext';
@@ -17,6 +9,8 @@ import { getAsyncContextStrategy, getCurrentHub } from '../hub';
 import { handleCallbackErrors } from '../utils/handleCallbackErrors';
 import { hasTracingEnabled } from '../utils/hasTracingEnabled';
 import {
+  _getSpanForScope,
+  _setSpanForScope,
   addChildSpanToSpan,
   getActiveSpan,
   spanIsSampled,
@@ -34,13 +28,12 @@ import { setCapturedScopesOnSpan } from './utils';
 /**
  * Wraps a function with a transaction/span and finishes the span after the function is done.
  * The created span is the active span and will be used as parent by other spans created inside the function
- * and can be accessed via `Sentry.getSpan()`, as long as the function is executed while the scope is active.
+ * and can be accessed via `Sentry.getActiveSpan()`, as long as the function is executed while the scope is active.
  *
  * If you want to create a span that is not set as active, use {@link startInactiveSpan}.
  *
- * Note that if you have not enabled tracing extensions via `addTracingExtensions`
- * or you didn't set `tracesSampleRate`, this function will not generate spans
- * and the `span` returned from the callback will be undefined.
+ * You'll always get a span passed to the callback,
+ * it may just be a non-recording span if the span is not sampled or if tracing is disabled.
  */
 export function startSpan<T>(context: StartSpanOptions, callback: (span: Span) => T): T {
   const acs = getAcs();
@@ -51,23 +44,19 @@ export function startSpan<T>(context: StartSpanOptions, callback: (span: Span) =
   const spanContext = normalizeContext(context);
 
   return withScope(context.scope, scope => {
-    // eslint-disable-next-line deprecation/deprecation
-    const hub = getCurrentHub();
-    // eslint-disable-next-line deprecation/deprecation
-    const parentSpan = scope.getSpan() as SentrySpan | undefined;
+    const parentSpan = _getSpanForScope(scope) as SentrySpan | undefined;
 
     const shouldSkipSpan = context.onlyIfParent && !parentSpan;
     const activeSpan = shouldSkipSpan
       ? new SentryNonRecordingSpan()
-      : createChildSpanOrTransaction(hub, {
+      : createChildSpanOrTransaction({
           parentSpan,
           spanContext,
           forceTransaction: context.forceTransaction,
           scope,
         });
 
-    // eslint-disable-next-line deprecation/deprecation
-    scope.setSpan(activeSpan);
+    _setSpanForScope(scope, activeSpan);
 
     return handleCallbackErrors(
       () => callback(activeSpan),
@@ -90,9 +79,8 @@ export function startSpan<T>(context: StartSpanOptions, callback: (span: Span) =
  * The created span is the active span and will be used as parent by other spans created inside the function
  * and can be accessed via `Sentry.getActiveSpan()`, as long as the function is executed while the scope is active.
  *
- * Note that if you have not enabled tracing extensions via `addTracingExtensions`
- * or you didn't set `tracesSampleRate`, this function will not generate spans
- * and the `span` returned from the callback will be undefined.
+ * You'll always get a span passed to the callback,
+ * it may just be a non-recording span if the span is not sampled or if tracing is disabled.
  */
 export function startSpanManual<T>(context: StartSpanOptions, callback: (span: Span, finish: () => void) => T): T {
   const acs = getAcs();
@@ -103,23 +91,19 @@ export function startSpanManual<T>(context: StartSpanOptions, callback: (span: S
   const spanContext = normalizeContext(context);
 
   return withScope(context.scope, scope => {
-    // eslint-disable-next-line deprecation/deprecation
-    const hub = getCurrentHub();
-    // eslint-disable-next-line deprecation/deprecation
-    const parentSpan = scope.getSpan() as SentrySpan | undefined;
+    const parentSpan = _getSpanForScope(scope) as SentrySpan | undefined;
 
     const shouldSkipSpan = context.onlyIfParent && !parentSpan;
     const activeSpan = shouldSkipSpan
       ? new SentryNonRecordingSpan()
-      : createChildSpanOrTransaction(hub, {
+      : createChildSpanOrTransaction({
           parentSpan,
           spanContext,
           forceTransaction: context.forceTransaction,
           scope,
         });
 
-    // eslint-disable-next-line deprecation/deprecation
-    scope.setSpan(activeSpan);
+    _setSpanForScope(scope, activeSpan);
 
     function finishAndSetSpan(): void {
       activeSpan.end();
@@ -140,13 +124,12 @@ export function startSpanManual<T>(context: StartSpanOptions, callback: (span: S
 
 /**
  * Creates a span. This span is not set as active, so will not get automatic instrumentation spans
- * as children or be able to be accessed via `Sentry.getSpan()`.
+ * as children or be able to be accessed via `Sentry.getActiveSpan()`.
  *
  * If you want to create a span that is set as active, use {@link startSpan}.
  *
- * Note that if you have not enabled tracing extensions via `addTracingExtensions`
- * or you didn't set `tracesSampleRate` or `tracesSampler`, this function will not generate spans
- * and the `span` returned from the callback will be undefined.
+ * This function will always return a span,
+ * it may just be a non-recording span if the span is not sampled or if tracing is disabled.
  */
 export function startInactiveSpan(context: StartSpanOptions): Span {
   const acs = getAcs();
@@ -155,11 +138,8 @@ export function startInactiveSpan(context: StartSpanOptions): Span {
   }
 
   const spanContext = normalizeContext(context);
-  // eslint-disable-next-line deprecation/deprecation
-  const hub = getCurrentHub();
   const parentSpan = context.scope
-    ? // eslint-disable-next-line deprecation/deprecation
-      (context.scope.getSpan() as SentrySpan | undefined)
+    ? (_getSpanForScope(context.scope) as SentrySpan | undefined)
     : (getActiveSpan() as SentrySpan | undefined);
 
   const shouldSkipSpan = context.onlyIfParent && !parentSpan;
@@ -170,7 +150,7 @@ export function startInactiveSpan(context: StartSpanOptions): Span {
 
   const scope = context.scope || getCurrentScope();
 
-  return createChildSpanOrTransaction(hub, {
+  return createChildSpanOrTransaction({
     parentSpan,
     spanContext,
     forceTransaction: context.forceTransaction,
@@ -219,26 +199,22 @@ export function withActiveSpan<T>(span: Span | null, callback: (scope: Scope) =>
   }
 
   return withScope(scope => {
-    // eslint-disable-next-line deprecation/deprecation
-    scope.setSpan(span || undefined);
+    _setSpanForScope(scope, span || undefined);
     return callback(scope);
   });
 }
 
-function createChildSpanOrTransaction(
-  hub: Hub,
-  {
-    parentSpan,
-    spanContext,
-    forceTransaction,
-    scope,
-  }: {
-    parentSpan: SentrySpan | undefined;
-    spanContext: TransactionContext;
-    forceTransaction?: boolean;
-    scope: Scope;
-  },
-): Span {
+function createChildSpanOrTransaction({
+  parentSpan,
+  spanContext,
+  forceTransaction,
+  scope,
+}: {
+  parentSpan: SentrySpan | undefined;
+  spanContext: TransactionContext;
+  forceTransaction?: boolean;
+  scope: Scope;
+}): Span {
   if (!hasTracingEnabled()) {
     return new SentryNonRecordingSpan();
   }
