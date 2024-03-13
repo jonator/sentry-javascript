@@ -95,6 +95,7 @@ export {
   hapiIntegration,
   setupHapiErrorHandler,
   spotlightIntegration,
+  setupFastifyErrorHandler,
 } from '@sentry/node';
 
 // Keeping the `*` exports for backwards compatibility and types
