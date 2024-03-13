@@ -90,7 +90,7 @@ const DEPENDENTS: Dependent[] = [
   },
   {
     package: '@sentry/sveltekit',
-    compareWith: nodeExperimentalExports,
+    compareWith: nodeExports,
     exports: Object.keys(SentrySvelteKit),
   },
 ];
