@@ -888,8 +888,6 @@ jobs:
             remix: 1
           - node: 16
             remix: 1
-          - tracingIntegration: true
-            remix: 2
     steps:
       - name: Check out current commit (${{ needs.job_get_metadata.outputs.commit_label }})
         uses: actions/checkout@v4
@@ -907,7 +905,6 @@ jobs:
         env:
           NODE_VERSION: ${{ matrix.node }}
           REMIX_VERSION: ${{ matrix.remix }}
-          TRACING_INTEGRATION: ${{ matrix.tracingIntegration }}
         run: |
           cd packages/remix
           yarn test:integration:ci
